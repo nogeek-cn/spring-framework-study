@@ -20,6 +20,7 @@ public class DemoController {
                       @DarianRequestParam("name") String name) {
         String result = demoService.get(name);
         System.err.println(result);
+
         return result;
     }
 }

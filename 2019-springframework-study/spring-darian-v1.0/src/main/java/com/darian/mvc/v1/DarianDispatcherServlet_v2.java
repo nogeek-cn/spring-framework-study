@@ -1,10 +1,7 @@
-
 package com.darian.mvc.v1;
 
-import com.darian.mvc.v1.annotation.DarianAutowrited;
-import com.darian.mvc.v1.annotation.DarianController;
-import com.darian.mvc.v1.annotation.DarianRequestMapping;
-import com.darian.mvc.v1.annotation.DarianService;
+import com.darian.mvc.v1.annotation.*;
+import sun.awt.SunHints;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -14,16 +11,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
-public class DarianDispatcherServlet extends HttpServlet {
+public class DarianDispatcherServlet_v2 extends HttpServlet {
 
     private static String SCANN_PACKAGE_KEY = "scannPackage";
     private Properties contenxtConfig = new Properties();
@@ -56,6 +50,7 @@ public class DarianDispatcherServlet extends HttpServlet {
             doDispatcher(req, resp);
         } catch (Exception e) {
             System.err.println(e);
+            System.err.println("e.stanck:[" + Arrays.toString(e.getStackTrace() ) + "]");
 
             resp.getWriter().write("{\"code\":500,\"msg\":\"自定义DispatcherServlet#doDispatcher发生错误！！！\"}\n\n\n" +
                     "ExceptionMessage:[" + e.getMessage() + "]");
@@ -206,8 +201,47 @@ public class DarianDispatcherServlet extends HttpServlet {
             Method method = this.handler_mappings.get(url);
             String beanName = toLowerfistCase(method.getDeclaringClass().getSimpleName());
 
+            // parameterMap 列表
             Map<String, String[]> parameterMap = req.getParameterMap();
-            Object returnObject = method.invoke(ioc_map.get(beanName), new Object[]{req, resp, parameterMap.get("name")[0]});
+            // 方法参数列表
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            Object[] parameterValues = new Object[parameterTypes.length];
+
+            for (int i = 0; i < parameterTypes.length; i++) {
+                Class<?> parameterType = parameterTypes[i];
+                if (parameterType == HttpServletRequest.class) {
+                    parameterValues[i] = req;
+                    continue;
+                }
+                if (parameterType == HttpServletResponse.class) {
+                    parameterValues[i] = resp;
+                    continue;
+                }
+                if (parameterType == String.class) {
+
+                    Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+
+                    for (int j  = 0; j < parameterAnnotations.length; j ++) {
+                        for (Annotation annotation : parameterAnnotations[j]) {
+                            if (annotation instanceof DarianRequestParam){
+                                String paramName = DarianRequestParam.class.cast(annotation).value();
+                                if (parameterMap.containsKey(paramName)) {
+                                    for (Map.Entry<String, String[]> param : parameterMap.entrySet()) {
+                                        String value = Arrays.toString(param.getValue())
+                                                .replaceAll("\\[\\]", "")
+                                                .replaceAll("\\s", ",");
+                                        parameterValues[i] = value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+            Object returnObject = method.invoke(ioc_map.get(beanName), parameterValues);
 
             resp.getWriter().write(returnObject.toString());
 

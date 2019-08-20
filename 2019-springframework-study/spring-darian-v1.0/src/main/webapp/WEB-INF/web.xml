@@ -6,7 +6,8 @@
 
     <servlet>
         <servlet-name>darianmvc</servlet-name>
-        <servlet-class>com.darian.mvc.v1.DarianDispatcherServlet</servlet-class>
+        <!--<servlet-class>com.darian.mvc.v1.DarianDispatcherServlet</servlet-class>-->
+        <servlet-class>com.darian.mvc.v1.DarianDispatcherServlet_v2</servlet-class>
         <init-param>
             <param-name>contextConfigLocation</param-name>
             <param-value>classpath:application.properties</param-value>
