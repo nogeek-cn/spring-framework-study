@@ -10,15 +10,16 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>spring-aop</module>
-        <module>spring-orm</module>
-        <module>spring-transaction</module>
-        <module>spring-V1.0</module>
-        <module>spring-V2.0</module>
-        <module>spring-V2.0+MVC</module>
-        <module>spring-V2.0-MVC2.0</module>
-        <module>spring-V2.0-MVC2.0-AOP</module>
-        <module>springframeworktest</module>
+        <!--<module>spring-aop</module>-->
+        <!--<module>spring-orm</module>-->
+        <!--<module>spring-transaction</module>-->
+        <!--<module>spring-V1.0</module>-->
+        <!--<module>spring-V2.0</module>-->
+        <!--<module>spring-V2.0+MVC</module>-->
+        <!--<module>spring-V2.0-MVC2.0</module>-->
+        <!--<module>spring-V2.0-MVC2.0-AOP</module>-->
+        <!--<module>springframeworktest</module>-->
+        <module>2019-springframework-study</module>
     </modules>
 
 </project>
