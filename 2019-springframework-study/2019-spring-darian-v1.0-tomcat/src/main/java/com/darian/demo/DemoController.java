@@ -17,12 +17,17 @@ public class DemoController {
     @DarianAutowrited
     private DemoService demoService;
 
-    @DarianRequestMapping("/query.json")
+    @DarianRequestMapping("/query")
     public String query(HttpServletRequest req, HttpServletResponse resp,
                         @DarianRequestParam("name") String name) {
         LOGGER.info("request--name:[" + name + "]");
         String result = demoService.get(name);
         LOGGER.info("response-result:[" + result + "]");
         return result;
+    }
+
+    @DarianRequestMapping("/remove")
+    public String remove(@DarianRequestParam("id") Integer id) {
+        return "" + id;
     }
 }

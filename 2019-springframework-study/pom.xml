@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>spring-darian-v1.0</module>
+        <module>2019-spring-darian-v1.0-tomcat</module>
     </modules>
 
 </project>

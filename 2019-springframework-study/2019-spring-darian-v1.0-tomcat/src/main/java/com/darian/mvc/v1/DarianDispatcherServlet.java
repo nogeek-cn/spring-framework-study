@@ -18,8 +18,8 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.net.URL;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,11 +32,11 @@ public class DarianDispatcherServlet extends HttpServlet {
 
     Logger LOGGER = Logger.getLogger(DarianDispatcherServlet.class.getSimpleName());
 
-    private static String     SCANN_PACKAGE_KEY = "scannPackage";
-    private        Properties contenxtConfig    = new Properties();
+    private static String SCANN_PACKAGE_KEY = "scannPackage";
+    private Properties contenxtConfig = new Properties();
 
-    private List<String>        classNameList    = new ArrayList<>();
-    private Map<String, Object> ioc_map          = new HashMap<>();
+    private List<String> classNameList = new ArrayList<>();
+    private Map<String, Object> ioc_map = new HashMap<>();
     private Map<String, Method> handler_mappings = new HashMap<>();
 
     @Override
@@ -60,7 +60,7 @@ public class DarianDispatcherServlet extends HttpServlet {
     public void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String url = req.getRequestURI().replaceAll("/+", "/");
-        if (url.endsWith("/favicon.ico") ){
+        if (url.endsWith("/favicon.ico")) {
             LOGGER.info("\"/favicon.ico\" 不做处理");
             return;
         }
@@ -69,8 +69,7 @@ public class DarianDispatcherServlet extends HttpServlet {
 
             doDispatcher(req, resp);
         } catch (Exception e) {
-            LOGGER.info(e.getMessage());
-            LOGGER.info("e.stack: \n \t" + Arrays.toString(e.getStackTrace()).replaceAll(",", "\n\t"));
+            e.printStackTrace();
 
             resp.getWriter().write("{\"code\":500,\"msg\":\"自定义DispatcherServlet#doDispatcher发生错误！！！\"}\n\n\n" +
                     "ExceptionMessage:[" + e.getMessage() + "]");
@@ -82,8 +81,7 @@ public class DarianDispatcherServlet extends HttpServlet {
                 .getResourceAsStream(servletConfigPath)) {
             contenxtConfig.load(fis);
         } catch (IOException e) {
-            LOGGER.info(e.getMessage());
-            LOGGER.info("e.stack: \n \t" + Arrays.toString(e.getStackTrace()).replaceAll(",", "\n\t") + "");
+            e.printStackTrace();
         }
 
     }
@@ -143,8 +141,7 @@ public class DarianDispatcherServlet extends HttpServlet {
             }
 
         } catch (Exception e) {
-            LOGGER.info(e.getMessage());
-            LOGGER.info("e.stack: \n \t" + (Arrays.toString(e.getStackTrace()).replaceAll(",", "\n\t")));
+            e.printStackTrace();
         }
     }
 
@@ -156,7 +153,9 @@ public class DarianDispatcherServlet extends HttpServlet {
     }
 
     private void doAutowrited() {
-        if (ioc_map.isEmpty()) { return; }
+        if (ioc_map.isEmpty()) {
+            return;
+        }
         for (Map.Entry<String, Object> entry : ioc_map.entrySet()) {
             // Declared 所有的字段，private / protected / public
             Field[] fields = entry.getValue().getClass().getDeclaredFields();
@@ -172,9 +171,7 @@ public class DarianDispatcherServlet extends HttpServlet {
                     try {
                         field.set(entry.getValue(), ioc_map.get(beanName));
                     } catch (IllegalAccessException e) {
-                        LOGGER.info(e.getMessage());
-                        LOGGER.info("e.stack: \n \t" + (Arrays.toString(e.getStackTrace()).replaceAll(",", "\n\t")));
-
+                        e.printStackTrace();
                     }
                 }
             }
@@ -183,11 +180,15 @@ public class DarianDispatcherServlet extends HttpServlet {
 
     // 初始话 url 和 method 的一对一 对应关系
     private void initHandlerMapping() {
-        if (ioc_map.isEmpty()) { return; }
+        if (ioc_map.isEmpty()) {
+            return;
+        }
 
         for (Map.Entry<String, Object> entry : ioc_map.entrySet()) {
             Class<?> clazz = entry.getValue().getClass();
-            if (!clazz.isAnnotationPresent(DarianController.class)) { continue; }
+            if (!clazz.isAnnotationPresent(DarianController.class)) {
+                continue;
+            }
 
             // 保存在类上边的 @DarianRequestMapping("/demo")
             String baseUrl = "";
@@ -197,7 +198,9 @@ public class DarianDispatcherServlet extends HttpServlet {
 
             // 默认获取所有的 public 方法
             for (Method method : clazz.getMethods()) {
-                if (!method.isAnnotationPresent(DarianRequestMapping.class)) { continue; }
+                if (!method.isAnnotationPresent(DarianRequestMapping.class)) {
+                    continue;
+                }
 
                 String url = baseUrl + "/" + method.getAnnotation(DarianRequestMapping.class).value();
                 url = url.replaceAll("/+", "/");
@@ -216,7 +219,7 @@ public class DarianDispatcherServlet extends HttpServlet {
             url = url.replace(contextPath, "").replaceAll("/+", "/");
 
 
-            if (!this.handler_mappings.containsKey(url) ) {
+            if (!this.handler_mappings.containsKey(url)) {
                 throw new Exception("{\"code\":404,\"msg\":\"找不到对应的 mappings！: mapping_url:[" + url + "]\"}");
             }
 
@@ -229,31 +232,33 @@ public class DarianDispatcherServlet extends HttpServlet {
             // 参数值
             Object[] parameterValues = new Object[parameterTypes.length];
 
-            Map<String, String[]> parameterMap = req.getParameterMap();
+            Map<String, String[]> requestParameterMap = req.getParameterMap();
 
             for (int i = 0; i < parameterTypes.length; i++) {
+
                 Class<?> parameterType = parameterTypes[i];
 
-                if (parameterType == HttpServletRequest.class){
+                if (parameterType == HttpServletRequest.class) {
                     parameterValues[i] = req;
                     continue;
                 }
-                if (parameterType == HttpServletResponse.class){
+                if (parameterType == HttpServletResponse.class) {
                     parameterValues[i] = resp;
                     continue;
                 }
-                if (parameterType == String.class){
+                if (parameterType == String.class) {
+
                     Annotation[][] methodParameterAnnotations = method.getParameterAnnotations();
                     for (int j = 0; j < methodParameterAnnotations.length; j++) {
                         for (Annotation annotation : methodParameterAnnotations[j]) {
-                            if (annotation instanceof DarianRequestParam){
-                                String paramName =  DarianRequestParam.class.cast(annotation).value();
+                            if (annotation instanceof DarianRequestParam) {
+                                String paramName = DarianRequestParam.class.cast(annotation).value();
 
-                                if (parameterMap.containsKey(paramName)){
-                                    for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+                                if (requestParameterMap.containsKey(paramName)) {
+                                    for (Map.Entry<String, String[]> entry : requestParameterMap.entrySet()) {
                                         String value = Arrays.toString(entry.getValue())
-                                                .replaceAll("\\[\\]","")
-                                                .replaceAll("\\s",",");
+                                                .replaceAll("\\[|\\]", "")
+                                                .replaceAll("\\s", ",");
                                         parameterValues[i] = value;
                                     }
                                 }
@@ -280,4 +285,6 @@ public class DarianDispatcherServlet extends HttpServlet {
             throws ServletException, IOException {
         this.doPost(req, resp);
     }
+
+
 }

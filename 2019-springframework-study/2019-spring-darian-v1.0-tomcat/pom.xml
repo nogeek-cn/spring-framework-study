@@ -42,6 +42,7 @@
                 <version>2.1</version>
                 <configuration>
                     <path>/</path>
+                    <uriEncoding>UTF-8</uriEncoding>
                 </configuration>
                 <executions>
                     <execution>
